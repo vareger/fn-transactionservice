@@ -64,6 +64,9 @@ docker {
         tag = 'propyns/eth-transaction-service:latest'
     }
     registryCredentials {
+        /*
+            properties: 'dockerUser', 'dockerPassword', 'dockerEmail' need to be set as gradle properties
+         */
         username = dockerUser
         password = dockerPassword
         email = dockerEmail
