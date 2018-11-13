@@ -29,6 +29,9 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
     private Web3j web3j;
 
     @Autowired
+    private KafkaMQ kafkaMQ;
+
+    @Autowired
     public DatabaseTransactionReceiptProcessor() {
         super(null);
     }
@@ -127,6 +130,8 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
         transaction.setMined(true);
         transaction.setStatus(receipt.isStatusOK() ? TransactionStatus.SUCCESS : TransactionStatus.FAIL);
         this.transactions.save(transaction);
+        log.info("Transaction: {} was set to state: {}", transaction.getTransactionHash(), transaction.getStatus().name());
+        this.kafkaMQ.publish(transaction);
     }
 
     private Optional<TransactionReceipt> sendTransactionReceiptRequest(

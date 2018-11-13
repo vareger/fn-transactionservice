@@ -5,6 +5,6 @@ spring:
     active: ${APP_PROFILE}
   cloud:
     config:
-      uri: http://localhost:8888
+      uri: ${CONFIG_SERVICE_URL}
       username: ${CONFIG_USER}
       password: ${CONFIG_PASSWORD}

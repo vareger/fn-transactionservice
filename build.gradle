@@ -5,15 +5,19 @@ buildscript {
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.3.RELEASE")
+        classpath 'com.bmuschko:gradle-docker-plugin:4.0.4'
     }
 }
 
 plugins {
     id 'java'
+    id 'net.ltgt.apt' version '0.10'
 }
 
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'com.bmuschko.docker-remote-api'
+apply plugin: 'com.bmuschko.docker-spring-boot-application'
 
 bootJar {
     manifest {
@@ -42,7 +46,26 @@ dependencies {
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-web'
     compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-config'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa'
+    compile group: 'org.springframework.kafka', name: 'spring-kafka'
     compile group: 'org.postgresql', name: 'postgresql', version: '42.1.4'
     compile group: 'org.hibernate', name: 'hibernate-core', version: '5.3.1.Final'
+    compile group: 'org.web3j', name: 'core', version: '3.6.0'
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.4'
     testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    apt 'org.projectlombok:lombok:1.18.4'
+}
+
+docker {
+    springBootApplication {
+        baseImage = 'java:8-jre'
+        ports = [8080]
+        tag = 'propyns/eth-transaction-service:latest'
+    }
+    registryCredentials {
+        username = dockerUser
+        password = dockerPassword
+        email = dockerEmail
+    }
 }
