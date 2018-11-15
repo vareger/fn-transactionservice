@@ -2,6 +2,7 @@ package com.propy.service.bctransaction.processors;
 
 import com.propy.service.bctransaction.entities.Transaction;
 import com.propy.service.bctransaction.entities.Transaction.TransactionStatus;
+import com.propy.service.bctransaction.producers.KafkaMQ;
 import com.propy.service.bctransaction.repositories.TransactionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

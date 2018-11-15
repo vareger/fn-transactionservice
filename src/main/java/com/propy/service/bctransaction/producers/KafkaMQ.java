@@ -1,4 +1,4 @@
-package com.propy.service.bctransaction.processors;
+package com.propy.service.bctransaction.producers;
 
 import com.propy.service.bctransaction.entities.Transaction;
 import lombok.extern.slf4j.Slf4j;
