@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Configuration;
+import org.web3j.tx.ChainId;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @Configuration
-@ConfigurationProperties(prefix = "ethereum.wallets")
+@ConfigurationProperties(prefix = "ethereum")
 public class EthereumProperties {
 
     @NoArgsConstructor
@@ -22,7 +23,14 @@ public class EthereumProperties {
         private String privateKey;
     }
 
-    private Wallet system;
-    private List<Wallet> multiSig;
+    @NoArgsConstructor
+    @Data
+    public static class Wallets {
+        private Wallet system;
+        private List<Wallet> multiSig;
+    }
+
+    private Wallets wallets;
+    private Byte chainId;
 
 }

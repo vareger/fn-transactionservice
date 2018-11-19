@@ -24,14 +24,18 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class Web3jBeans {
 
-    @Autowired
-    private Web3jConfig config;
+    private final Web3jConfig config;
 
-    public Credentials initCredentials() {
+    @Autowired
+    public Web3jBeans(Web3jConfig config) {
+        this.config = config;
+    }
+
+    public static Credentials initCredentials() {
         return Credentials.create("");
     }
 
-    public Credentials initCredentials(String privateKey) {
+    public static Credentials initCredentials(String privateKey) {
         return Credentials.create(privateKey);
     }
 

@@ -13,8 +13,12 @@ import org.springframework.util.concurrent.SuccessCallback;
 @Component
 public class KafkaMQ implements SuccessCallback<SendResult<String, Transaction>>, FailureCallback {
 
+    private final KafkaTemplate<String, Transaction> kafka;
+
     @Autowired
-    private KafkaTemplate<String, Transaction> kafka;
+    public KafkaMQ(KafkaTemplate<String, Transaction> kafka) {
+        this.kafka = kafka;
+    }
 
     public void publish(Transaction transaction) {
         log.info("Publish transaction {}", transaction.getTransactionHash());
