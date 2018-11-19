@@ -39,7 +39,7 @@ public class Application {
 
     @PostConstruct
     public void init() {
-        log.info("Application initiated with wallet address {}", properties.getSystem().getAddress());
+        log.info("Application initiated with wallet address {}", properties.getWallets().getSystem().getAddress());
     }
 
 }

@@ -1,5 +1,6 @@
 package com.propy.service.bctransaction.processors;
 
+import com.propy.service.bctransaction.coordinator.ZooKeeperCoordinator;
 import com.propy.service.bctransaction.entities.Transaction;
 import com.propy.service.bctransaction.entities.Transaction.TransactionStatus;
 import com.propy.service.bctransaction.producers.KafkaMQ;
@@ -23,18 +24,26 @@ import java.util.Optional;
 @Component
 public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProcessor {
 
-    @Autowired
-    private TransactionRepository transactions;
+    private final TransactionRepository transactions;
+
+    private final Web3j web3j;
+
+    private final KafkaMQ kafkaMQ;
+
+    private ZooKeeperCoordinator coordinator;
 
     @Autowired
-    private Web3j web3j;
-
-    @Autowired
-    private KafkaMQ kafkaMQ;
-
-    @Autowired
-    public DatabaseTransactionReceiptProcessor() {
+    public DatabaseTransactionReceiptProcessor(
+            TransactionRepository transactions,
+            Web3j web3j,
+            KafkaMQ kafkaMQ,
+            ZooKeeperCoordinator coordinator
+    ) {
         super(null);
+        this.transactions = transactions;
+        this.web3j = web3j;
+        this.kafkaMQ = kafkaMQ;
+        this.coordinator = coordinator;
     }
 
     /**
@@ -114,8 +123,9 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
         return new EmptyTransactionReceipt(transactionHash);
     }
 
-    @Scheduled(fixedDelay = 2000)
+    @Scheduled(fixedDelay = 1000)
     public void update() {
+        ZooKeeperCoordinator.Lock lock = this.coordinator.obtainLock();
         log.debug("Checking for transactions");
         transactions.findAllByStatus(TransactionStatus.PENDING).stream()
                 .map(this::getTransactionReceipt)
@@ -123,6 +133,7 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
                 .map(Optional::get)
                 .filter(this::isTransactionMined)
                 .forEach(this::updateTransactionInfo);
+        lock.release();
     }
 
     synchronized private void updateTransactionInfo(TransactionReceipt receipt) {
