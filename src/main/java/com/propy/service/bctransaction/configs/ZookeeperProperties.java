@@ -21,8 +21,10 @@ public class ZookeeperProperties {
         private Integer sessionTimeout;
     }
 
+    private String namespace;
     private String connectString;
     private Integer connectionTimeout;
+    private Integer sessionTimeout;
     private Coordinator coordinator;
 
 

@@ -1,14 +1,17 @@
 package com.propy.service.bctransaction.processors;
 
-import com.propy.service.bctransaction.coordinator.ZooKeeperCoordinator;
 import com.propy.service.bctransaction.entities.Transaction;
 import com.propy.service.bctransaction.entities.Transaction.TransactionStatus;
 import com.propy.service.bctransaction.producers.KafkaMQ;
 import com.propy.service.bctransaction.repositories.TransactionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.recipes.locks.Locker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -21,8 +24,10 @@ import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
-@Component
+@Service
 public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProcessor {
+
+    private static final String ZNODE_LOCK_ROOT = "/lock_root";
 
     private final TransactionRepository transactions;
 
@@ -30,20 +35,20 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
 
     private final KafkaMQ kafkaMQ;
 
-    private ZooKeeperCoordinator coordinator;
+    private CuratorFramework framework;
 
     @Autowired
     public DatabaseTransactionReceiptProcessor(
             TransactionRepository transactions,
             Web3j web3j,
             KafkaMQ kafkaMQ,
-            ZooKeeperCoordinator coordinator
+            CuratorFramework framework
     ) {
         super(null);
         this.transactions = transactions;
         this.web3j = web3j;
         this.kafkaMQ = kafkaMQ;
-        this.coordinator = coordinator;
+        this.framework = framework;
     }
 
     /**
@@ -125,15 +130,18 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
 
     @Scheduled(fixedDelay = 1000)
     public void update() {
-        ZooKeeperCoordinator.Lock lock = this.coordinator.obtainLock();
-        log.debug("Checking for transactions");
-        transactions.findAllByStatus(TransactionStatus.PENDING).stream()
-                .map(this::getTransactionReceipt)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .filter(this::isTransactionMined)
-                .forEach(this::updateTransactionInfo);
-        lock.release();
+        InterProcessMutex mutex = new InterProcessMutex(this.framework, ZNODE_LOCK_ROOT);
+        try (Locker ignored = new Locker(mutex)) {
+            log.debug("Checking for transactions");
+            transactions.findAllByStatus(TransactionStatus.PENDING).stream()
+                    .map(this::getTransactionReceipt)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(this::isTransactionMined)
+                    .forEach(this::updateTransactionInfo);
+        } catch (Exception e) {
+            log.error("Locking error", e);
+        }
     }
 
     synchronized private void updateTransactionInfo(TransactionReceipt receipt) {
