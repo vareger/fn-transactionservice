@@ -13,19 +13,10 @@ import org.springframework.context.annotation.Configuration;
 @Data
 public class ZookeeperProperties {
 
-    @NoArgsConstructor
-    @Data
-    public static class Coordinator {
-        private String zNodeRoot;
-        private Integer connectionTimeout;
-        private Integer sessionTimeout;
-    }
-
+    private String nodeRoot;
     private String namespace;
     private String connectString;
     private Integer connectionTimeout;
     private Integer sessionTimeout;
-    private Coordinator coordinator;
-
 
 }
