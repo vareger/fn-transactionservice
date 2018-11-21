@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 @Data
 public class ZookeeperProperties {
 
-    private String nodeRoot;
     private String namespace;
     private String connectString;
     private Integer connectionTimeout;
