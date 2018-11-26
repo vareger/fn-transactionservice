@@ -11,8 +11,6 @@ import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.DefaultBlockParameterName;
-import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.tx.ChainId;
 import org.web3j.utils.Convert;
@@ -28,89 +26,63 @@ import java.util.*;
 @Component
 public class TransactionSender {
 
-    private static final Map<String, BigInteger> Nonces = Collections.synchronizedMap(new HashMap<>());
-
     private final Web3j web3j;
 
     private final EthereumProperties properties;
 
     private final DatabaseTransactionReceiptProcessor processor;
 
+    private ZookeeperNonce nonce;
+
     @Autowired
-    public TransactionSender(Web3j web3j, EthereumProperties properties, DatabaseTransactionReceiptProcessor processor) {
+    public TransactionSender(
+            Web3j web3j,
+            EthereumProperties properties,
+            DatabaseTransactionReceiptProcessor processor,
+            ZookeeperNonce nonce
+    ) {
         this.web3j = web3j;
         this.properties = properties;
         this.processor = processor;
+        this.nonce = nonce;
     }
 
     public String sendTransaction(SendTransaction sendTransaction) {
-        synchronized (Nonces) {
-            int tries = 3;
-            do {
-                try {
-                    Credentials credentials =
-                            this.findCredentials(sendTransaction.getSender()).orElseThrow(() -> new IllegalArgumentException("Sender\'s private key not found"));
-                    this.updateNonce(sendTransaction.getSender());
-                    EthSendTransaction ethSendTransaction = this.sendTransaction(
-                            credentials,
-                            Convert.toWei(BigDecimal.TEN, Convert.Unit.GWEI).toBigInteger(),
-                            BigInteger.valueOf(4_000_000L),
-                            sendTransaction.getReceiver(),
-                            Numeric.toHexString(sendTransaction.getData()),
-                            sendTransaction.getValue(),
-                            this.getNonce(sendTransaction.getSender())
-                    );
-                    log.info("Transaction is sent by {}. Hash: {}.",
-                            sendTransaction.getSender(),
-                            ethSendTransaction.getTransactionHash());
-                    if (ethSendTransaction.hasError()) {
-                        this.setPreviousNonce(
-                                sendTransaction.getSender(),
-                                this.previousNonce(sendTransaction.getSender()).subtract(BigInteger.ONE)
-                        );
-                    }
-                    String transactionHash = ethSendTransaction.getTransactionHash();
-                    processor.addTransaction(transactionHash, sendTransaction.getTags());
-                    return transactionHash;
-                } catch (Throwable e) {
-                    log.error("Transaction sending error", e);
-                    if (--tries > 0)
-                        continue;
-                    this.setPreviousNonce(
-                            sendTransaction.getSender(),
-                            this.previousNonce(sendTransaction.getSender()).subtract(BigInteger.ONE)
-                    );
+        int tries = 3;
+        do {
+            try {
+                this.nonce.lock(sendTransaction.getSender());
+                BigInteger nonce_v = BigInteger.valueOf(this.nonce.loadNonce());
+                Credentials credentials =
+                        this.findCredentials(sendTransaction.getSender()).orElseThrow(() -> new IllegalArgumentException("Sender\'s private key not found"));
+                EthSendTransaction ethSendTransaction = this.sendTransaction(
+                        credentials,
+                        Convert.toWei(BigDecimal.TEN, Convert.Unit.GWEI).toBigInteger(),
+                        BigInteger.valueOf(4_000_000L),
+                        sendTransaction.getReceiver(),
+                        Numeric.toHexString(sendTransaction.getData()),
+                        sendTransaction.getValue(),
+                        nonce_v
+                );
+                log.info("Transaction is sent by {}. Hash: {}.",
+                        sendTransaction.getSender(),
+                        ethSendTransaction.getTransactionHash());
+                if (ethSendTransaction.hasError()) {
+                    this.nonce.unlock(false);
                 }
-            } while (true);
-        }
-    }
-
-    private BigInteger getNonce(String address) {
-        return this.previousNonce(address);
-    }
-
-    private void updateNonce(String address) throws IOException {
-        BigInteger remoteNonce = this.getNonceNode(address);
-        if (this.previousNonce(address) == null || this.previousNonce(address).compareTo(remoteNonce) < 0) {
-            this.setPreviousNonce(address, remoteNonce);
-        } else {
-            this.setPreviousNonce(address, this.previousNonce(address).add(BigInteger.ONE));
-        }
-    }
-
-    private BigInteger getNonceNode(String address) throws IOException {
-        EthGetTransactionCount ethGetTransactionCount = web3j.ethGetTransactionCount(
-                address, DefaultBlockParameterName.PENDING).send();
-
-        return ethGetTransactionCount.getTransactionCount();
-    }
-
-    private void setPreviousNonce(String address, BigInteger nonce) {
-        Nonces.put(address, nonce);
-    }
-
-    private BigInteger previousNonce(String address) {
-        return Nonces.get(address);
+                String transactionHash = ethSendTransaction.getTransactionHash();
+                processor.addTransaction(transactionHash, sendTransaction.getTags());
+                this.nonce.unlock(true);
+                return transactionHash;
+            } catch (Throwable e) {
+                log.error("Transaction sending error", e);
+                this.nonce.unlock(false);
+                if (--tries > 0)
+                    continue;
+                break;
+            }
+        } while (true);
+        return "";
     }
 
     private Optional<Credentials> findCredentials(String address) {

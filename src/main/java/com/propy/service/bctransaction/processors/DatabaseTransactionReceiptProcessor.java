@@ -2,16 +2,20 @@ package com.propy.service.bctransaction.processors;
 
 import com.propy.service.bctransaction.entities.Transaction;
 import com.propy.service.bctransaction.entities.Transaction.TransactionStatus;
-import com.propy.service.bctransaction.producers.KafkaMQ;
 import com.propy.service.bctransaction.repositories.TransactionRepository;
+import com.propy.service.bctransaction.streams.TransactionStreams;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.recipes.locks.Locker;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.annotation.EnableBinding;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MimeTypeUtils;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -25,6 +29,7 @@ import java.util.Optional;
 
 @Slf4j
 @Service
+@EnableBinding(TransactionStreams.class)
 public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProcessor {
 
     private static final String ZNODE_LOCK_ROOT = "/lock_root";
@@ -33,7 +38,7 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
 
     private final Web3j web3j;
 
-    private final KafkaMQ kafkaMQ;
+    private final TransactionStreams transactionStreams;
 
     private CuratorFramework framework;
 
@@ -41,13 +46,13 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
     public DatabaseTransactionReceiptProcessor(
             TransactionRepository transactions,
             Web3j web3j,
-            KafkaMQ kafkaMQ,
+            TransactionStreams streams,
             CuratorFramework framework
     ) {
         super(null);
         this.transactions = transactions;
         this.web3j = web3j;
-        this.kafkaMQ = kafkaMQ;
+        this.transactionStreams = streams;
         this.framework = framework;
     }
 
@@ -151,7 +156,12 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
         transaction.setStatus(receipt.isStatusOK() ? TransactionStatus.SUCCESS : TransactionStatus.FAIL);
         this.transactions.save(transaction);
         log.info("Transaction: {} was set to state: {}", transaction.getTransactionHash(), transaction.getStatus().name());
-        this.kafkaMQ.publish(transaction);
+        MessageChannel messageChannel = this.transactionStreams.broadcastTransaction();
+        messageChannel.send(
+                MessageBuilder
+                        .withPayload(transaction)
+                        .build()
+        );
     }
 
     private Optional<TransactionReceipt> sendTransactionReceiptRequest(
