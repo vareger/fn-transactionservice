@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.StreamListener;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Service;
@@ -21,9 +22,12 @@ public class TransactionMessageListener {
 
     @StreamListener(SendTransactionStreams.INPUT)
     @SendTo(SendTransactionStreams.OUTPUT)
-    public String sendTransactionMessage(@Payload SendTransaction transaction) {
+    public String sendTransactionMessage(
+            @Payload SendTransaction transaction,
+            @Header(required = false, value = SendTransaction.PRIVATE_KEY_HEADER) String privateKey
+    ) {
         log.info("Received send transaction with sender: {}", transaction.getSender());
-        return sender.sendTransaction(transaction);
+        return sender.sendTransaction(transaction, privateKey);
     }
 
 }

@@ -12,6 +12,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class SendTransaction {
 
+    public static final String PRIVATE_KEY_HEADER = "X-Wallet-Private-Key";
+
     private String sender;
     private String receiver;
     private BigInteger value;

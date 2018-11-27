@@ -47,12 +47,12 @@ public class TransactionSender {
         this.nonce = nonce;
     }
 
-    public String sendTransaction(SendTransaction sendTransaction) {
+    public String sendTransaction(SendTransaction sendTransaction, String privateKey) {
         int tries = 3;
         do {
             try {
                 Credentials credentials =
-                        this.findCredentials(sendTransaction.getSender()).orElseThrow(() -> new IllegalArgumentException("Sender\'s private key not found"));
+                        this.findCredentials(sendTransaction.getSender(), privateKey).orElseThrow(() -> new IllegalArgumentException("Sender\'s private key not found or incorrect"));
                 this.nonce.lock(credentials.getAddress());
                 BigInteger nonce_v = BigInteger.valueOf(this.nonce.loadNonce());
                 EthSendTransaction ethSendTransaction = this.sendTransaction(
@@ -88,12 +88,17 @@ public class TransactionSender {
         return "";
     }
 
-    private Optional<Credentials> findCredentials(String address) {
+    private Optional<Credentials> findCredentials(String address, String privateKey) {
         if (properties.getWallets().getSystem().getAddress().equalsIgnoreCase(address)) {
             return Optional.of(Web3jBeans.initCredentials(properties.getWallets().getSystem().getPrivateKey()));
         }
         else if (address == null || address.isEmpty()) {
             return Optional.of(Web3jBeans.initCredentials(properties.getWallets().getSystem().getPrivateKey()));
+        }
+        else if (privateKey != null) {
+            Credentials credentials = Web3jBeans.initCredentials(privateKey);
+            return credentials.getAddress().equalsIgnoreCase(address) ?
+                    Optional.of(credentials) : Optional.empty();
         }
         else {
             List<EthereumProperties.Wallet> wallets = properties.getWallets().getMultiSig();
