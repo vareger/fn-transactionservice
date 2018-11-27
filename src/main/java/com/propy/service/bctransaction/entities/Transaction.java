@@ -8,6 +8,7 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,8 +20,8 @@ public class Transaction implements Cloneable {
 
     @Id
     private String transactionHash;
-    private Boolean mined;
-    private TransactionStatus status;
+    private Boolean mined = false;
+    private TransactionStatus status = TransactionStatus.PENDING;
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<String, String> keys;
 
@@ -30,7 +31,7 @@ public class Transaction implements Cloneable {
 
     public Transaction(String transactionHash, Map<String, String> keys) {
         this(transactionHash);
-        this.keys = new HashMap<>(keys);
+        this.keys = keys != null ? new HashMap<>(keys) : Collections.emptyMap();
     }
 
     @Override
