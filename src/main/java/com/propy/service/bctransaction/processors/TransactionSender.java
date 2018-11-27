@@ -51,10 +51,10 @@ public class TransactionSender {
         int tries = 3;
         do {
             try {
-                this.nonce.lock(sendTransaction.getSender());
-                BigInteger nonce_v = BigInteger.valueOf(this.nonce.loadNonce());
                 Credentials credentials =
                         this.findCredentials(sendTransaction.getSender()).orElseThrow(() -> new IllegalArgumentException("Sender\'s private key not found"));
+                this.nonce.lock(credentials.getAddress());
+                BigInteger nonce_v = BigInteger.valueOf(this.nonce.loadNonce());
                 EthSendTransaction ethSendTransaction = this.sendTransaction(
                         credentials,
                         Convert.toWei(BigDecimal.TEN, Convert.Unit.GWEI).toBigInteger(),
@@ -64,11 +64,14 @@ public class TransactionSender {
                         sendTransaction.getValue(),
                         nonce_v
                 );
-                log.info("Transaction is sent by {}. Hash: {}.",
-                        sendTransaction.getSender(),
-                        ethSendTransaction.getTransactionHash());
+                log.info("Transaction is sent by {}. Hash: {}, Nonce: {}.",
+                        credentials.getAddress(),
+                        ethSendTransaction.getTransactionHash(),
+                        nonce_v.toString());
                 if (ethSendTransaction.hasError()) {
+                    log.error("Sending error: {}", ethSendTransaction.getError().getMessage());
                     this.nonce.unlock(false);
+                    break;
                 }
                 String transactionHash = ethSendTransaction.getTransactionHash();
                 processor.addTransaction(transactionHash, sendTransaction.getTags());
@@ -88,7 +91,11 @@ public class TransactionSender {
     private Optional<Credentials> findCredentials(String address) {
         if (properties.getWallets().getSystem().getAddress().equalsIgnoreCase(address)) {
             return Optional.of(Web3jBeans.initCredentials(properties.getWallets().getSystem().getPrivateKey()));
-        } else {
+        }
+        else if (address == null || address.isEmpty()) {
+            return Optional.of(Web3jBeans.initCredentials(properties.getWallets().getSystem().getPrivateKey()));
+        }
+        else {
             List<EthereumProperties.Wallet> wallets = properties.getWallets().getMultiSig();
             return wallets.stream()
                     .filter(w -> w.getAddress().equalsIgnoreCase(address))
