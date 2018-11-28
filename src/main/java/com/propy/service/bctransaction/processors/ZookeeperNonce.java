@@ -45,7 +45,7 @@ public class ZookeeperNonce {
         }
         this.mutex = new InterProcessMutex(
                 this.curatorFramework,
-                NONCE_ROOT
+                this.zNoncePath(address)
         );
         this.mutex.acquire();
         this.nonceAtomic = new DistributedAtomicInteger(
