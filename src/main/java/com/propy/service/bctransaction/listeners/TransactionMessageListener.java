@@ -1,8 +1,8 @@
 package com.propy.service.bctransaction.listeners;
 
-import com.propy.service.bctransaction.entities.SendTransaction;
+import com.propy.service.bctransaction.messaging.models.SendTransaction;
 import com.propy.service.bctransaction.processors.TransactionSender;
-import com.propy.service.bctransaction.streams.SendTransactionStreams;
+import com.propy.service.bctransaction.messaging.streams.SendTransactionStreams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.stream.annotation.EnableBinding;

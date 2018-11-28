@@ -1,6 +1,6 @@
-package com.propy.service.bctransaction.repositories;
+package com.propy.service.bctransaction.database.repositories;
 
-import com.propy.service.bctransaction.entities.Transaction;
+import com.propy.service.bctransaction.database.entities.Transaction;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;

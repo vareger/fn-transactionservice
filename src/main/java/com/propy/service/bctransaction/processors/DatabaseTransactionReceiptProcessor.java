@@ -1,9 +1,10 @@
 package com.propy.service.bctransaction.processors;
 
-import com.propy.service.bctransaction.entities.Transaction;
-import com.propy.service.bctransaction.entities.Transaction.TransactionStatus;
-import com.propy.service.bctransaction.repositories.TransactionRepository;
-import com.propy.service.bctransaction.streams.TransactionStreams;
+import com.propy.service.bctransaction.database.entities.Transaction;
+import com.propy.service.bctransaction.database.entities.Transaction.TransactionStatus;
+import com.propy.service.bctransaction.database.repositories.TransactionRepository;
+import com.propy.service.bctransaction.messaging.models.TransactionInfo;
+import com.propy.service.bctransaction.messaging.streams.TransactionStreams;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -20,10 +21,12 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.exceptions.TransactionException;
 import org.web3j.tx.response.EmptyTransactionReceipt;
 import org.web3j.tx.response.TransactionReceiptProcessor;
+import org.web3j.utils.Numeric;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -151,15 +154,12 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
         Optional<Transaction> dbtransaction = this.transactions.findById(receipt.getTransactionHash());
         Transaction transaction = dbtransaction.orElseThrow(() -> new IllegalStateException("Transaction object does not exists!"));
         transaction.setMined(true);
-        transaction.setStatus(receipt.isStatusOK() ? TransactionStatus.SUCCESS : TransactionStatus.FAIL);
+        transaction.setStatus(receipt.isStatusOK() ?
+                receipt.getContractAddress() != null ? TransactionStatus.DEPLOYED : TransactionStatus.SUCCESS :
+                TransactionStatus.FAIL);
         this.transactions.save(transaction);
         log.info("Transaction: {} was set to state: {}", transaction.getTransactionHash(), transaction.getStatus().name());
-        MessageChannel messageChannel = this.transactionStreams.broadcastTransaction();
-        messageChannel.send(
-                MessageBuilder
-                        .withPayload(transaction)
-                        .build()
-        );
+        this.sendTransactionMessage(receipt, transaction);
     }
 
     private Optional<TransactionReceipt> sendTransactionReceiptRequest(
@@ -185,6 +185,23 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
 
     private boolean isTransactionMined(TransactionReceipt transactionReceipt) {
         return transactionReceipt.getBlockNumberRaw() != null;
+    }
+
+    private void sendTransactionMessage(TransactionReceipt receipt, Transaction transaction) {
+        String address = transaction.getStatus() == TransactionStatus.DEPLOYED ? receipt.getContractAddress() : receipt.getTo();
+        TransactionInfo transactionInfo = TransactionInfo.builder()
+                .transactionHash(Numeric.hexStringToByteArray(receipt.getTransactionHash()))
+                .from(Numeric.hexStringToByteArray(receipt.getFrom()))
+                .status(transaction.getStatus())
+                .to(Numeric.hexStringToByteArray(address))
+                .events(receipt.getLogs().stream().map(TransactionInfo.Event::new).collect(Collectors.toList()))
+                .build();
+        MessageChannel messageChannel = this.transactionStreams.broadcastTransaction();
+        messageChannel.send(
+                MessageBuilder
+                        .withPayload(transactionInfo)
+                        .build()
+        );
     }
 
 }

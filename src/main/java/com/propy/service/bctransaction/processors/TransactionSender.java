@@ -2,7 +2,7 @@ package com.propy.service.bctransaction.processors;
 
 import com.propy.service.bctransaction.beans.Web3jBeans;
 import com.propy.service.bctransaction.configs.EthereumProperties;
-import com.propy.service.bctransaction.entities.SendTransaction;
+import com.propy.service.bctransaction.messaging.models.SendTransaction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;

@@ -1,4 +1,4 @@
-package com.propy.service.bctransaction.entities;
+package com.propy.service.bctransaction.messaging.models;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

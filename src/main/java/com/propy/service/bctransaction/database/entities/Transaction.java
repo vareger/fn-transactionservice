@@ -1,4 +1,4 @@
-package com.propy.service.bctransaction.entities;
+package com.propy.service.bctransaction.database.entities;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -47,7 +47,8 @@ public class Transaction implements Cloneable {
     public enum TransactionStatus {
         PENDING,
         FAIL,
-        SUCCESS
+        SUCCESS,
+        DEPLOYED
     }
 
 }

@@ -1,6 +1,6 @@
 package com.propy.service.bctransaction.producers;
 
-import com.propy.service.bctransaction.entities.Transaction;
+import com.propy.service.bctransaction.database.entities.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;

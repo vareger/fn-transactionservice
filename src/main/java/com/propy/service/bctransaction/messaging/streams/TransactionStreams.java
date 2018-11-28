@@ -1,4 +1,4 @@
-package com.propy.service.bctransaction.streams;
+package com.propy.service.bctransaction.messaging.streams;
 
 import org.springframework.cloud.stream.annotation.Output;
 import org.springframework.messaging.MessageChannel;

@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-@EnableJpaRepositories(basePackages = "com.propy.service.bctransaction.repositories")
+@EnableJpaRepositories(basePackages = "com.propy.service.bctransaction.database.repositories")
 @Configuration
 public class MainConfig {
 
