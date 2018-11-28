@@ -1,6 +1,7 @@
 package com.propy.service.bctransaction.messaging.models;
 
 import com.propy.service.bctransaction.database.entities.Transaction;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class TransactionInfo {
 
@@ -25,6 +27,7 @@ public class TransactionInfo {
 
     @Data
     @NoArgsConstructor
+    @AllArgsConstructor
     @Builder
     public static class Event {
         private List<byte[]> topics;
