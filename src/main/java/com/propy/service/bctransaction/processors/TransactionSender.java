@@ -11,6 +11,8 @@ import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.EthEstimateGas;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.tx.ChainId;
 import org.web3j.utils.Convert;
@@ -55,10 +57,13 @@ public class TransactionSender {
                         this.findCredentials(sendTransaction.getSender(), privateKey).orElseThrow(() -> new IllegalArgumentException("Sender\'s private key not found or incorrect"));
                 this.nonce.lock(credentials.getAddress());
                 BigInteger nonce_v = BigInteger.valueOf(this.nonce.loadNonce());
+                BigInteger gasLimit = this.getEstimatedGasLimit(
+                        new Transaction(credentials.getAddress(), BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, sendTransaction.getReceiver(), sendTransaction.getValue(), Numeric.toHexString(sendTransaction.getData()))
+                );
                 EthSendTransaction ethSendTransaction = this.sendTransaction(
                         credentials,
                         Convert.toWei(BigDecimal.TEN, Convert.Unit.GWEI).toBigInteger(),
-                        BigInteger.valueOf(4_000_000L),
+                        gasLimit,
                         sendTransaction.getReceiver(),
                         Numeric.toHexString(sendTransaction.getData()),
                         sendTransaction.getValue(),
@@ -138,6 +143,32 @@ public class TransactionSender {
         String hexValue = Numeric.toHexString(signedMessage);
 
         return web3j.ethSendRawTransaction(hexValue).send();
+    }
+
+    private BigInteger getEstimatedGasLimit(Transaction transaction) {
+        final BigInteger defaultGasLimit = BigInteger.valueOf(4_000_000L);
+        try {
+            EthEstimateGas estimateGas1 = web3j.ethEstimateGas(transaction).send();
+            EthEstimateGas estimateGas2 = web3j.ethEstimateGas(transaction).send();
+            EthEstimateGas estimateGas3 = web3j.ethEstimateGas(transaction).send();
+            log.debug("Using estimated gas limit value.");
+            if (estimateGas1.hasError() && estimateGas2.hasError() && estimateGas3.hasError()) {
+                log.error("Failed transaction: from:{}, to:{}, nonce:{}, data:{}, value: {}",
+                        transaction.getFrom(),
+                        transaction.getTo(),
+                        transaction.getNonce(),
+                        transaction.getData(),
+                        transaction.getValue()
+                );
+                return defaultGasLimit;
+            }
+            BigInteger estimated = estimateGas1.getAmountUsed().max(estimateGas2.getAmountUsed());
+            estimated = estimated.max(estimateGas3.getAmountUsed());
+            return estimated.add(BigInteger.valueOf(21000));
+        } catch (Exception e) {
+            log.error("Gas limit not allowed, set to default value {}, {}", defaultGasLimit, e);
+            return defaultGasLimit;
+        }
     }
 
 }
