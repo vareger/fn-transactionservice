@@ -195,6 +195,7 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
                 .status(transaction.getStatus())
                 .to(Numeric.hexStringToByteArray(address))
                 .events(receipt.getLogs().stream().map(TransactionInfo.Event::new).collect(Collectors.toList()))
+                .tags(transaction.getKeys())
                 .build();
         MessageChannel messageChannel = this.transactionStreams.broadcastTransaction();
         messageChannel.send(
