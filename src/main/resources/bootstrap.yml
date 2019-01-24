@@ -8,3 +8,4 @@ spring:
       uri: ${CONFIG_SERVICE_URL}
       username: ${CONFIG_USER}
       password: ${CONFIG_PASSWORD}
+      enabled: false

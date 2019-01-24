@@ -1,24 +1,25 @@
 package com.propy.service.bctransaction.configs;
 
-import org.springframework.beans.factory.annotation.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
  * web3j property container.
  */
 @Configuration
+@ConfigurationProperties("web3j")
+@Data
+@NoArgsConstructor
 public class Web3jConfig {
 
-    @Value("${web3j.client-address}")
     public String clientAddress;
 
-    @Value("${web3j.admin-client:false}")
-    public Boolean adminClient;
+    public Boolean adminClient = false;
 
-    @Value("${web3j.network-id:1}")
-    public String networkId;
+    public String networkId = "1";
 
-    @Value("${web3j.httpTimeoutSeconds:360}")
-    public Long httpTimeoutSeconds;
+    public Long httpTimeoutSeconds = 300L;
 
 }

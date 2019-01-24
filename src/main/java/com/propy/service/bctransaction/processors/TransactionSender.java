@@ -21,7 +21,8 @@ import org.web3j.utils.Numeric;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @RefreshScope
@@ -94,16 +95,16 @@ public class TransactionSender {
     }
 
     private Optional<Credentials> findCredentials(String address, String privateKey) {
-        if (properties.getWallets().getSystem().getAddress().equalsIgnoreCase(address)) {
-            return Optional.of(Web3jBeans.initCredentials(properties.getWallets().getSystem().getPrivateKey()));
+        if (privateKey != null) {
+            Credentials credentials = Web3jBeans.initCredentials(privateKey);
+            return credentials.getAddress().equalsIgnoreCase(address) ?
+                    Optional.of(credentials) : Optional.empty();
         }
         else if (address == null || address.isEmpty()) {
             return Optional.of(Web3jBeans.initCredentials(properties.getWallets().getSystem().getPrivateKey()));
         }
-        else if (privateKey != null) {
-            Credentials credentials = Web3jBeans.initCredentials(privateKey);
-            return credentials.getAddress().equalsIgnoreCase(address) ?
-                    Optional.of(credentials) : Optional.empty();
+        else if (properties.getWallets().getSystem().getAddress().equalsIgnoreCase(address)) {
+            return Optional.of(Web3jBeans.initCredentials(properties.getWallets().getSystem().getPrivateKey()));
         }
         else {
             List<EthereumProperties.Wallet> wallets = properties.getWallets().getMultiSig();

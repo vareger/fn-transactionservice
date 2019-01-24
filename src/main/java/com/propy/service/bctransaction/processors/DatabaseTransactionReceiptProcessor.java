@@ -134,7 +134,7 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
         return new EmptyTransactionReceipt(transactionHash);
     }
 
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 100)
     public void update() {
         InterProcessMutex mutex = new InterProcessMutex(this.framework, ZNODE_LOCK_ROOT);
         try (Locker ignored = new Locker(mutex)) {

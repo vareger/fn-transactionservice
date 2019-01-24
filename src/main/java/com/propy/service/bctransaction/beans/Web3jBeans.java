@@ -17,6 +17,7 @@ import org.web3j.protocol.ipc.UnixIpcService;
 import org.web3j.protocol.ipc.WindowsIpcService;
 import org.web3j.protocol.websocket.WebSocketService;
 
+import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -40,14 +41,14 @@ public class Web3jBeans {
     }
 
     @Bean
-    public Web3j web3j() {
-        log.info("Building service for endpoint: " + config.clientAddress);
-        Web3jService web3jService = buildService(config.clientAddress);
+    public Web3j web3j() throws ConnectException {
+        Web3jService web3jService = buildService();
         return Web3j.build(web3jService);
     }
 
-    private Web3jService buildService(String clientAddress) {
+    private Web3jService buildService() throws ConnectException {
         Web3jService web3jService;
+        String clientAddress = config.clientAddress;
 
         if (clientAddress == null || clientAddress.equals("")) {
             web3jService = new HttpService(createOkHttpClient());
@@ -55,6 +56,7 @@ public class Web3jBeans {
             web3jService = new HttpService(clientAddress, createOkHttpClient(), false);
         } else if(clientAddress.startsWith("ws") || clientAddress.startsWith("wss")) {
             web3jService = new WebSocketService(clientAddress, false);
+            ((WebSocketService) web3jService).connect();
         } else if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
             web3jService = new WindowsIpcService(clientAddress);
         } else {
