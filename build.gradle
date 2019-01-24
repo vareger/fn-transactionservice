@@ -50,13 +50,15 @@ dependencies {
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa'
     compile group: 'org.postgresql', name: 'postgresql', version: '42.1.4'
+    implementation group: 'com.h2database', name: 'h2'
     compile group: 'org.hibernate', name: 'hibernate-core', version: '5.3.1.Final'
-    compile group: 'org.web3j', name: 'core', version: '4.0.1'
+    compile group: 'org.web3j', name: 'core', version: '4.1.1'
     compile group: 'org.apache.zookeeper', name: 'zookeeper', version: '3.4.13'
     compile group: 'org.apache.curator', name: 'curator-framework'
     compile group: 'org.apache.curator', name: 'curator-client'
     compile group: 'org.apache.curator', name: 'curator-recipes'
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.4'
+    compileOnly "org.springframework.boot:spring-boot-configuration-processor"
     testCompile group: 'junit', name: 'junit', version: '4.12'
 
     apt 'org.projectlombok:lombok:1.18.4'
@@ -66,7 +68,7 @@ docker {
     springBootApplication {
         baseImage = 'java:8-jre'
         ports = [8080]
-        tag = 'propyns/eth-transaction-service:latest'
+        tag = 'vareger/transaction-service:1.0'
     }
     registryCredentials {
         /*
