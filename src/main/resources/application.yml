@@ -1,0 +1,91 @@
+test: 'This is test value'
+spring:
+  profiles: local
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: 'sa'
+    password: ''
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  cloud:
+    stream:
+      kafka:
+        binder:
+          autoAddPartitions: true
+          brokers: localhost:9092
+      bindings:
+        send-transaction-in:
+          contentType: 'application/json'
+          destination: 'send-transaction-rinkeby'
+          group: 'transaction-service'
+        send-transaction-out:
+          contentType: 'text/plain'
+          destination: 'send-transaction-hash-rinkeby'
+        transaction-broadcast:
+          contentType: 'application/json'
+          destination: 'ethereum.rinkeby.transaction.all'
+
+web3j:
+  client-address: http://rinkeby.chain2web.com:8545
+
+ethereum:
+  chain-id: 4
+
+zookeeper:
+  connect-string: localhost:2181
+  connection-timeout: 3000
+  session-timeout: 10000
+  namespace: 'transaction-service-alfa'
+server:
+  port: 8081
+---
+spring:
+  profiles: default
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  cloud:
+    stream:
+      kafka:
+        binder:
+          autoAddPartitions: false
+          brokers: ${KAFKA_BOOTSTRAP}
+      bindings:
+        send-transaction-in:
+          contentType: 'application/json'
+          destination: 'send-transaction-rinkeby'
+          group: ${GROUP_ID}
+        send-transaction-out:
+          contentType: 'text/plain'
+          destination: 'send-transaction-hash-rinkeby'
+        transaction-broadcast:
+          contentType: 'application/json'
+          destination: 'ethereum.rinkeby.transaction.all'
+
+web3j:
+  client-address: ${NODE_URL}
+
+ethereum:
+  chain-id: 4
+
+zookeeper:
+  connect-string: ${ZOOKEEPER_URL}
+  connection-timeout: 3000
+  session-timeout: 10000
+  namespace: ${ZOOKEEPER_NAMESPACE}
