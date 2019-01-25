@@ -1,0 +1,110 @@
+#apiVersion: v1
+#kind: Namespace
+#metadata:
+#  name: event-loader-rinkeby
+#---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-topics-transactions
+  namespace: event-loader-rinkeby
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: topic-create-transaction-request
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        -   zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        -   send-transaction-rinkeby
+        - --partitions
+        -   "10"
+        - --replication-factor
+        -   "2"
+      - name: topic-create-transaction-response
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        - zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        - send-transaction-hash-rinkeby
+        - --partitions
+        - "10"
+        - --replication-factor
+        - "2"
+      - name: topic-create-transaction-broadcast
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        - zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        - ethereum.rinkeby.transaction.all
+        - --partitions
+        - "10"
+        - --replication-factor
+        - "2"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transaction-service
+  namespace: event-loader-rinkeby
+data:
+  NODE_URL: http://geth-rpc-rinkeby.default:8545
+  ZOOKEEPER_URL: zookeeper.kafka:2181
+  ZOOKEEPER_NAMESPACE: transaction-service-rinkeby
+  KAFKA_BOOTSTRAP: bootstrap.kafka:9092
+  DATABASE_URL: jdbc:postgresql://psql-db-service.postgresql:5432/transaction_db
+  GROUP_ID: 'transaction-service-rinkeby'
+  APP_PROFILE: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: event-loader-rinkeby
+  name: transaction-secret
+type: Opaque
+data:
+  DATABASE_USER: dHJhbnNhY3Rpb25fdXNlcg==
+  DATABASE_PASSWORD: VHhlejhnWTg2Sg==
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-sender
+  namespace: event-loader-rinkeby
+  labels:
+    app: transaction-sender
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: transaction-sender
+  template:
+    metadata:
+      labels:
+        app: transaction-sender
+    spec:
+      containers:
+      - name: transaction-sender
+        image: vareger/transaction-service:1.0
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: transaction-service
+        - secretRef:
+            name: transaction-secret
+      imagePullSecrets:
+      - name: regcred
