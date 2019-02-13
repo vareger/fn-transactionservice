@@ -94,7 +94,9 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
      * @param txHash Hash of the sent transaction
      */
     synchronized public void addTransaction(String txHash) {
-        this.transactions.save(new Transaction(txHash));
+        if (!this.transactions.existsById(txHash)) {
+            this.transactions.save(new Transaction(txHash));
+        }
     }
 
     /**

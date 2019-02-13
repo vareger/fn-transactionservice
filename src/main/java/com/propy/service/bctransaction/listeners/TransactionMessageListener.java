@@ -30,4 +30,9 @@ public class TransactionMessageListener {
         return sender.sendTransaction(transaction, privateKey);
     }
 
+    @StreamListener(SendTransactionStreams.OUTPUT)
+    public void listenTransaction(@Payload String transactionHash) {
+        sender.setWaitTransaction(transactionHash);
+    }
+
 }

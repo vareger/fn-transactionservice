@@ -13,6 +13,9 @@ public interface SendTransactionStreams {
     @Input(INPUT)
     SubscribableChannel inputSendTransaction();
 
+    @Input(OUTPUT)
+    SubscribableChannel inputHashTransaction();
+
     @Output(OUTPUT)
     MessageChannel outputTransactionHash();
 

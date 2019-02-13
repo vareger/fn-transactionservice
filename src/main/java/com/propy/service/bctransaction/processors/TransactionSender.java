@@ -94,6 +94,10 @@ public class TransactionSender {
         return "";
     }
 
+    public void setWaitTransaction(String transactionHash) {
+        this.processor.addTransaction(transactionHash);
+    }
+
     private Optional<Credentials> findCredentials(String address, String privateKey) {
         if (privateKey != null) {
             Credentials credentials = Web3jBeans.initCredentials(privateKey);
