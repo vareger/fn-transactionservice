@@ -9,11 +9,12 @@ public interface SendTransactionStreams {
 
     String INPUT = "send-transaction-in";
     String OUTPUT = "send-transaction-out";
+    String INPUT_HASH = "transaction-in-hash";
 
     @Input(INPUT)
     SubscribableChannel inputSendTransaction();
 
-    @Input(OUTPUT)
+    @Input(INPUT_HASH)
     SubscribableChannel inputHashTransaction();
 
     @Output(OUTPUT)

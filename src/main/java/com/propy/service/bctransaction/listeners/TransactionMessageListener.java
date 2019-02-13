@@ -30,7 +30,7 @@ public class TransactionMessageListener {
         return sender.sendTransaction(transaction, privateKey);
     }
 
-    @StreamListener(SendTransactionStreams.OUTPUT)
+    @StreamListener(SendTransactionStreams.INPUT_HASH)
     public void listenTransaction(@Payload String transactionHash) {
         sender.setWaitTransaction(transactionHash);
     }

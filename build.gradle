@@ -68,7 +68,7 @@ docker {
     springBootApplication {
         baseImage = 'java:8-jre-alpine'
         ports = [8080]
-        tag = 'vareger/transaction-service:1.0'
+        tag = 'vareger/transaction-service:1.1'
     }
     registryCredentials {
         /*
