@@ -97,3 +97,99 @@ zookeeper:
   connection-timeout: 3000
   session-timeout: 10000
   namespace: ${ZOOKEEPER_NAMESPACE}
+---
+spring:
+  profiles: ropsten
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  cloud:
+    stream:
+      kafka:
+        binder:
+          autoAddPartitions: false
+          brokers: ${KAFKA_BOOTSTRAP}
+      bindings:
+        send-transaction-in:
+          contentType: 'application/json'
+          destination: 'send-transaction-ropsten'
+          group: ${GROUP_ID}
+        send-transaction-out:
+          contentType: 'text/plain'
+          destination: 'send-transaction-hash-ropsten'
+        transaction-in-hash:
+          contentType: 'text/plain'
+          destination: 'send-transaction-hash-ropsten'
+          group: 'transaction-service'
+        transaction-broadcast:
+          contentType: 'application/json'
+          destination: 'ethereum.ropsten.transaction.all'
+
+web3j:
+  client-address: ${NODE_URL}
+
+ethereum:
+  chain-id: 3
+
+zookeeper:
+  connect-string: ${ZOOKEEPER_URL}
+  connection-timeout: 3000
+  session-timeout: 10000
+  namespace: ${ZOOKEEPER_NAMESPACE}
+---
+spring:
+  profiles: mainnet
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  cloud:
+    stream:
+      kafka:
+        binder:
+          autoAddPartitions: false
+          brokers: ${KAFKA_BOOTSTRAP}
+      bindings:
+        send-transaction-in:
+          contentType: 'application/json'
+          destination: 'send-transaction-mainnet'
+          group: ${GROUP_ID}
+        send-transaction-out:
+          contentType: 'text/plain'
+          destination: 'send-transaction-hash-mainnet'
+        transaction-in-hash:
+          contentType: 'text/plain'
+          destination: 'send-transaction-hash-mainnet'
+          group: 'transaction-service'
+        transaction-broadcast:
+          contentType: 'application/json'
+          destination: 'ethereum.mainnet.transaction.all'
+
+web3j:
+  client-address: ${NODE_URL}
+
+ethereum:
+  chain-id: 1
+
+zookeeper:
+  connect-string: ${ZOOKEEPER_URL}
+  connection-timeout: 3000
+  session-timeout: 10000
+  namespace: ${ZOOKEEPER_NAMESPACE}
