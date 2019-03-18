@@ -24,9 +24,9 @@ spec:
         - --topic
         -   send-transaction-rinkeby
         - --partitions
-        -   "10"
+        -   "4"
         - --replication-factor
-        -   "2"
+        -   "4"
       - name: topic-create-transaction-response
         image: solsson/kafka:2.0
         command:
@@ -38,9 +38,9 @@ spec:
         - --topic
         - send-transaction-hash-rinkeby
         - --partitions
-        - "10"
+        - "4"
         - --replication-factor
-        - "2"
+        - "4"
       - name: topic-create-transaction-broadcast
         image: solsson/kafka:2.0
         command:
@@ -52,9 +52,9 @@ spec:
         - --topic
         - ethereum.rinkeby.transaction.all
         - --partitions
-        - "10"
+        - "4"
         - --replication-factor
-        - "2"
+        - "4"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -62,11 +62,11 @@ metadata:
   name: transaction-service
   namespace: event-loader-rinkeby
 data:
-  NODE_URL: http://geth-rpc-rinkeby.default:8545
+  NODE_URL: https://rinkeby.infura.io/KoT2OtS1XERWOC0QQAPX
   ZOOKEEPER_URL: zookeeper.kafka:2181
   ZOOKEEPER_NAMESPACE: transaction-service-rinkeby
   KAFKA_BOOTSTRAP: bootstrap.kafka:9092
-  DATABASE_URL: jdbc:postgresql://psql-db-service.postgresql:5432/transaction_db
+  DATABASE_URL: jdbc:postgresql://psql-db-service.postgresql:5432/transaction_db_rinkeby
   GROUP_ID: 'transaction-service-rinkeby'
   APP_PROFILE: default
 ---
@@ -77,7 +77,7 @@ metadata:
   name: transaction-secret
 type: Opaque
 data:
-  DATABASE_USER: dHJhbnNhY3Rpb25fdXNlcg==
+  DATABASE_USER: dHJhbnNhY3Rpb25fdXNlcl9yaW5rZWJ5
   DATABASE_PASSWORD: VHhlejhnWTg2Sg==
 ---
 apiVersion: apps/v1
@@ -88,7 +88,7 @@ metadata:
   labels:
     app: transaction-sender
 spec:
-  replicas: 6
+  replicas: 3
   selector:
     matchLabels:
       app: transaction-sender
@@ -99,7 +99,7 @@ spec:
     spec:
       containers:
       - name: transaction-sender
-        image: vareger/transaction-service:1.0
+        image: vareger/transaction-service:1.1
         imagePullPolicy: Always
         envFrom:
         - configMapRef:
