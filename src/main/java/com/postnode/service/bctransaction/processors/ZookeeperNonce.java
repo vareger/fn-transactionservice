@@ -13,6 +13,9 @@ import org.web3j.protocol.core.DefaultBlockParameterName;
 
 import java.io.IOException;
 
+/**
+ *
+ */
 @Slf4j
 @Component
 @RefreshScope
@@ -39,6 +42,12 @@ public class ZookeeperNonce {
         this.curatorFramework = curatorFramework;
     }
 
+    /**
+     * Perform to lock address
+     *
+     * @param address Ethereum address
+     * @throws IllegalAccessException When current process is already locked another address
+     */
     void lock(String address) throws Exception {
         if (this.mutex != null && this.mutex.isAcquiredInThisProcess()) {
             throw new IllegalAccessException("Already locked by this process");
@@ -57,6 +66,11 @@ public class ZookeeperNonce {
         this.nonceAtomic.initialize(0);
     }
 
+    /**
+     * Release locking of address
+     *
+     * @param increment if true then address will be incremented and saved in Zookeeper
+     */
     void unlock(boolean increment) {
         try {
             if (increment) {
@@ -70,6 +84,13 @@ public class ZookeeperNonce {
         }
     }
 
+    /**
+     * Load nonce number from Zookeeper node with check in blockchain
+     *
+     * @see Web3j
+     * @return Current nonce number for locked address
+     * @throws Exception When connection lost
+     */
     Integer loadNonce() throws Exception {
         Integer netNonce = this.loadNonceFromBlockchain(address);
         Integer savedNonce = this.nonceAtomic.get().postValue();

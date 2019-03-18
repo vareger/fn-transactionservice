@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @EnableBinding(TransactionStreams.class)
-public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProcessor {
+public class DatabaseTransactionReceiptProcessor {
 
     private static final String ZNODE_LOCK_ROOT = "/lock_root";
 
@@ -49,7 +49,6 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
             TransactionStreams streams,
             CuratorFramework framework
     ) {
-        super(null);
         this.transactions = transactions;
         this.web3j = web3j;
         this.transactionStreams = streams;
@@ -129,12 +128,9 @@ public class DatabaseTransactionReceiptProcessor extends TransactionReceiptProce
         }
     }
 
-    @Override
-    public TransactionReceipt waitForTransactionReceipt(String transactionHash)
-            throws IOException, TransactionException {
-        return new EmptyTransactionReceipt(transactionHash);
-    }
-
+    /**
+     * Process pending transactions to update they states
+     */
     @Scheduled(fixedDelay = 100)
     public void update() {
         InterProcessMutex mutex = new InterProcessMutex(this.framework, ZNODE_LOCK_ROOT);

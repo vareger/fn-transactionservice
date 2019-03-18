@@ -24,6 +24,11 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service fo publishing transactions to Ethereum Blockchain
+ *
+ * @author Maxim Fischuk
+ */
 @Slf4j
 @RefreshScope
 @Component
@@ -50,6 +55,13 @@ public class TransactionSender {
         this.nonce = nonce;
     }
 
+    /**
+     * Submit transaction to Ethereum Blockchain
+     *
+     * @param sendTransaction Transaction's data
+     * @param privateKey Private key for signing transaction (May be null)
+     * @return Hash of the published transaction
+     */
     public String sendTransaction(SendTransaction sendTransaction, String privateKey) {
         int tries = 3;
         do {
@@ -94,6 +106,11 @@ public class TransactionSender {
         return "";
     }
 
+    /**
+     * Add already sent transaction to wait list
+     *
+     * @param transactionHash Hash of the sent transaction
+     */
     public void setWaitTransaction(String transactionHash) {
         this.processor.addTransaction(transactionHash);
     }
