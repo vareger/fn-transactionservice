@@ -1,0 +1,110 @@
+#apiVersion: v1
+#kind: Namespace
+#metadata:
+#  name: event-loader-rinkeby
+#---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-topics-transactions
+  namespace: event-loader-mainnet
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: topic-create-transaction-request
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        -   zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        -   send-transaction-mainnet
+        - --partitions
+        -   "4"
+        - --replication-factor
+        -   "4"
+      - name: topic-create-transaction-response
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        - zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        - send-transaction-hash-mainnet
+        - --partitions
+        - "4"
+        - --replication-factor
+        - "4"
+      - name: topic-create-transaction-broadcast
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        - zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        - ethereum.mainnet.transaction.all
+        - --partitions
+        - "4"
+        - --replication-factor
+        - "4"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transaction-service
+  namespace: event-loader-mainnet
+data:
+  NODE_URL: http://geth-rpc-mainnet.default:8545
+  ZOOKEEPER_URL: zookeeper.kafka:2181
+  ZOOKEEPER_NAMESPACE: transaction-service-mainnet
+  KAFKA_BOOTSTRAP: bootstrap.kafka:9092
+  DATABASE_URL: jdbc:postgresql://psql-db-service.postgresql:5432/transaction_db_mainnet
+  GROUP_ID: 'transaction-service-mainnet'
+  APP_PROFILE: mainnet
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: event-loader-mainnet
+  name: transaction-secret
+type: Opaque
+data:
+  DATABASE_USER: dHJhbnNhY3Rpb25fdXNlcl9tYWlubmV0
+  DATABASE_PASSWORD: djh4RDVtNzVUN2g2VkM2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-sender
+  namespace: event-loader-mainnet
+  labels:
+    app: transaction-sender
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: transaction-sender
+  template:
+    metadata:
+      labels:
+        app: transaction-sender
+    spec:
+      containers:
+      - name: transaction-sender
+        image: vareger/transaction-service:1.1
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: transaction-service
+        - secretRef:
+            name: transaction-secret
+      imagePullSecrets:
+      - name: regcred

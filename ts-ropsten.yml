@@ -1,0 +1,110 @@
+#apiVersion: v1
+#kind: Namespace
+#metadata:
+#  name: event-loader-rinkeby
+#---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-topics-transactions
+  namespace: event-loader-ropsten
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: topic-create-transaction-request
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        -   zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        -   send-transaction-ropsten
+        - --partitions
+        -   "4"
+        - --replication-factor
+        -   "4"
+      - name: topic-create-transaction-response
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        - zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        - send-transaction-hash-ropsten
+        - --partitions
+        - "4"
+        - --replication-factor
+        - "4"
+      - name: topic-create-transaction-broadcast
+        image: solsson/kafka:2.0
+        command:
+        - ./bin/kafka-topics.sh
+        - --zookeeper
+        - zookeeper.kafka:2181
+        - --create
+        - --if-not-exists
+        - --topic
+        - ethereum.ropsten.transaction.all
+        - --partitions
+        - "4"
+        - --replication-factor
+        - "4"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transaction-service
+  namespace: event-loader-ropsten
+data:
+  NODE_URL: http://geth-rpc-ropsten.default:8545
+  ZOOKEEPER_URL: zookeeper.kafka:2181
+  ZOOKEEPER_NAMESPACE: transaction-service-ropsten
+  KAFKA_BOOTSTRAP: bootstrap.kafka:9092
+  DATABASE_URL: jdbc:postgresql://psql-db-service.postgresql:5432/transaction_db_ropsten
+  GROUP_ID: 'transaction-service-ropsten'
+  APP_PROFILE: ropsten
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: event-loader-ropsten
+  name: transaction-secret
+type: Opaque
+data:
+  DATABASE_USER: dHJhbnNhY3Rpb25fdXNlcl9yb3BzdGVu
+  DATABASE_PASSWORD: ZHBzZ2Zsa2Frd3c=
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-sender
+  namespace: event-loader-ropsten
+  labels:
+    app: transaction-sender
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: transaction-sender
+  template:
+    metadata:
+      labels:
+        app: transaction-sender
+    spec:
+      containers:
+      - name: transaction-sender
+        image: vareger/transaction-service:1.1
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: transaction-service
+        - secretRef:
+            name: transaction-secret
+      imagePullSecrets:
+      - name: regcred
